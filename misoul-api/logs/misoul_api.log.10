@@ -1,0 +1,144 @@
+2025-03-24 00:04:07,419 INFO: MISOUL API starting up [in O:\MISOUL\misoul-api\misoul-api\app\api.py:34]
+2025-03-24 00:04:08,955 INFO: MISOUL API starting up [in O:\MISOUL\misoul-api\misoul-api\app\api.py:34]
+2025-03-24 00:10:20,613 INFO: MISOUL API starting up [in O:\MISOUL\misoul-api\misoul-api\app\api.py:34]
+2025-03-24 00:10:21,865 INFO: MISOUL API starting up [in O:\MISOUL\misoul-api\misoul-api\app\api.py:34]
+2025-03-24 00:14:26,972 INFO: MISOUL API starting up [in O:\MISOUL\misoul-api\misoul-api\app\api.py:34]
+2025-03-24 00:14:28,334 INFO: MISOUL API starting up [in O:\MISOUL\misoul-api\misoul-api\app\api.py:34]
+2025-03-24 00:16:26,540 INFO: MISOUL API starting up [in O:\MISOUL\misoul-api\misoul-api\app\api.py:34]
+2025-03-24 00:16:27,759 INFO: MISOUL API starting up [in O:\MISOUL\misoul-api\misoul-api\app\api.py:34]
+2025-03-24 00:18:06,517 INFO: MISOUL API starting up [in O:\MISOUL\misoul-api\misoul-api\app\api.py:34]
+2025-03-24 00:18:07,926 INFO: MISOUL API starting up [in O:\MISOUL\misoul-api\misoul-api\app\api.py:34]
+2025-03-24 00:21:52,396 INFO: MISOUL API starting up [in O:\MISOUL\misoul-api\misoul-api\app\api.py:34]
+2025-03-24 00:23:26,084 INFO: MISOUL API starting up [in O:\MISOUL\misoul-api\misoul-api\app\api.py:34]
+2025-03-24 00:23:27,322 INFO: MISOUL API starting up [in O:\MISOUL\misoul-api\misoul-api\app\api.py:34]
+2025-03-24 00:26:47,802 INFO: MISOUL API starting up [in O:\MISOUL\misoul-api\misoul-api\app\api.py:34]
+2025-03-24 00:26:49,097 INFO: MISOUL API starting up [in O:\MISOUL\misoul-api\misoul-api\app\api.py:34]
+2025-03-24 00:28:21,139 ERROR: Traceback (most recent call last):
+  File "O:\MISOUL\misoul-api\misoul-api\app\api.py", line 53, in get_misoul_instance
+    from langchain_community.vectorstores import Chroma
+ModuleNotFoundError: No module named 'langchain_community'
+ [in O:\MISOUL\misoul-api\misoul-api\app\api.py:80]
+2025-03-24 00:30:11,590 INFO: MISOUL API starting up [in O:\MISOUL\misoul-api\misoul-api\app\api.py:34]
+2025-03-24 00:30:13,015 INFO: MISOUL API starting up [in O:\MISOUL\misoul-api\misoul-api\app\api.py:34]
+2025-03-24 00:30:24,718 ERROR: Traceback (most recent call last):
+  File "O:\MISOUL\misoul-api\misoul-api\app\api.py", line 58, in get_misoul_instance
+    embedding_model = pickle.load(f)
+AttributeError: Can't get attribute 'SimpleEmbeddings' on <module '__main__' from 'O:\\MISOUL\\misoul-api\\misoul-api\\run.py'>
+ [in O:\MISOUL\misoul-api\misoul-api\app\api.py:80]
+2025-03-24 00:31:54,232 INFO: MISOUL API starting up [in O:\MISOUL\misoul-api\misoul-api\app\api.py:34]
+2025-03-24 00:34:16,845 INFO: MISOUL API starting up [in O:\MISOUL\misoul-api\misoul-api\app\api.py:34]
+2025-03-24 00:34:18,386 INFO: MISOUL API starting up [in O:\MISOUL\misoul-api\misoul-api\app\api.py:34]
+2025-03-24 00:34:36,597 ERROR: Traceback (most recent call last):
+  File "C:\Users\cuong\AppData\Local\Programs\Python\Python313\Lib\site-packages\langchain_community\vectorstores\chroma.py", line 83, in __init__
+    import chromadb
+ModuleNotFoundError: No module named 'chromadb'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "O:\MISOUL\misoul-api\misoul-api\app\api.py", line 70, in get_misoul_instance
+    vectordb = Chroma(
+        persist_directory=Config.VECTOR_DB_PATH,
+        embedding_function=embedding_model
+    )
+  File "C:\Users\cuong\AppData\Local\Programs\Python\Python313\Lib\site-packages\langchain_core\_api\deprecation.py", line 214, in warn_if_direct_instance
+    return wrapped(self, *args, **kwargs)
+  File "C:\Users\cuong\AppData\Local\Programs\Python\Python313\Lib\site-packages\langchain_community\vectorstores\chroma.py", line 86, in __init__
+    raise ImportError(
+    ...<2 lines>...
+    )
+ImportError: Could not import chromadb python package. Please install it with `pip install chromadb`.
+ [in O:\MISOUL\misoul-api\misoul-api\app\api.py:88]
+2025-03-24 00:35:46,297 INFO: MISOUL API starting up [in O:\MISOUL\misoul-api\misoul-api\app\api.py:34]
+2025-03-24 00:35:47,878 INFO: MISOUL API starting up [in O:\MISOUL\misoul-api\misoul-api\app\api.py:34]
+2025-03-24 00:35:56,641 ERROR: Traceback (most recent call last):
+  File "C:\Users\cuong\AppData\Local\Programs\Python\Python313\Lib\site-packages\langchain_community\vectorstores\chroma.py", line 83, in __init__
+    import chromadb
+ModuleNotFoundError: No module named 'chromadb'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "O:\MISOUL\misoul-api\misoul-api\app\api.py", line 70, in get_misoul_instance
+    vectordb = Chroma(
+        persist_directory=Config.VECTOR_DB_PATH,
+        embedding_function=embedding_model
+    )
+  File "C:\Users\cuong\AppData\Local\Programs\Python\Python313\Lib\site-packages\langchain_core\_api\deprecation.py", line 214, in warn_if_direct_instance
+    return wrapped(self, *args, **kwargs)
+  File "C:\Users\cuong\AppData\Local\Programs\Python\Python313\Lib\site-packages\langchain_community\vectorstores\chroma.py", line 86, in __init__
+    raise ImportError(
+    ...<2 lines>...
+    )
+ImportError: Could not import chromadb python package. Please install it with `pip install chromadb`.
+ [in O:\MISOUL\misoul-api\misoul-api\app\api.py:88]
+2025-03-24 00:39:54,456 INFO: MISOUL API starting up [in O:\MISOUL\misoul-api\misoul-api\app\api.py:34]
+2025-03-24 00:39:55,869 INFO: MISOUL API starting up [in O:\MISOUL\misoul-api\misoul-api\app\api.py:34]
+2025-03-24 00:40:05,970 ERROR: Traceback (most recent call last):
+  File "C:\Users\cuong\AppData\Local\Programs\Python\Python313\Lib\site-packages\langchain_community\vectorstores\chroma.py", line 83, in __init__
+    import chromadb
+ModuleNotFoundError: No module named 'chromadb'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "O:\MISOUL\misoul-api\misoul-api\app\api.py", line 70, in get_misoul_instance
+    vectordb = Chroma(
+        persist_directory=Config.VECTOR_DB_PATH,
+        embedding_function=embedding_model
+    )
+  File "C:\Users\cuong\AppData\Local\Programs\Python\Python313\Lib\site-packages\langchain_core\_api\deprecation.py", line 214, in warn_if_direct_instance
+    return wrapped(self, *args, **kwargs)
+  File "C:\Users\cuong\AppData\Local\Programs\Python\Python313\Lib\site-packages\langchain_community\vectorstores\chroma.py", line 86, in __init__
+    raise ImportError(
+    ...<2 lines>...
+    )
+ImportError: Could not import chromadb python package. Please install it with `pip install chromadb`.
+ [in O:\MISOUL\misoul-api\misoul-api\app\api.py:88]
+2025-03-24 00:42:29,323 INFO: MISOUL API starting up [in O:\MISOUL\misoul-api\misoul-api\app\api.py:34]
+2025-03-24 00:42:30,766 INFO: MISOUL API starting up [in O:\MISOUL\misoul-api\misoul-api\app\api.py:34]
+2025-03-24 00:42:40,842 ERROR: Traceback (most recent call last):
+  File "C:\Users\cuong\AppData\Local\Programs\Python\Python313\Lib\site-packages\langchain_community\vectorstores\chroma.py", line 83, in __init__
+    import chromadb
+ModuleNotFoundError: No module named 'chromadb'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "O:\MISOUL\misoul-api\misoul-api\app\api.py", line 70, in get_misoul_instance
+    vectordb = Chroma(
+        persist_directory=Config.VECTOR_DB_PATH,
+        embedding_function=embedding_model
+    )
+  File "C:\Users\cuong\AppData\Local\Programs\Python\Python313\Lib\site-packages\langchain_core\_api\deprecation.py", line 214, in warn_if_direct_instance
+    return wrapped(self, *args, **kwargs)
+  File "C:\Users\cuong\AppData\Local\Programs\Python\Python313\Lib\site-packages\langchain_community\vectorstores\chroma.py", line 86, in __init__
+    raise ImportError(
+    ...<2 lines>...
+    )
+ImportError: Could not import chromadb python package. Please install it with `pip install chromadb`.
+ [in O:\MISOUL\misoul-api\misoul-api\app\api.py:88]
+2025-03-24 01:00:13,258 INFO: MISOUL API starting up [in O:\MISOUL\misoul-api\misoul-api\app\api.py:34]
+2025-03-24 01:00:14,871 INFO: MISOUL API starting up [in O:\MISOUL\misoul-api\misoul-api\app\api.py:34]
+2025-03-24 01:06:04,510 INFO: MISOUL API starting up [in O:\MISOUL\misoul-api\misoul-api\app\api.py:34]
+2025-03-24 01:06:06,058 INFO: MISOUL API starting up [in O:\MISOUL\misoul-api\misoul-api\app\api.py:34]
+2025-03-24 01:10:34,165 INFO: MISOUL API starting up [in O:\MISOUL\misoul-api\misoul-api\app\api.py:34]
+2025-03-24 01:10:35,624 INFO: MISOUL API starting up [in O:\MISOUL\misoul-api\misoul-api\app\api.py:34]
+2025-03-24 01:28:22,864 INFO: MISOUL API starting up [in O:\MISOUL\misoul-api\misoul-api\app\api.py:34]
+2025-03-24 01:28:25,235 INFO: MISOUL API starting up [in O:\MISOUL\misoul-api\misoul-api\app\api.py:34]
+2025-03-24 01:47:58,436 INFO: MISOUL API starting up [in O:\MISOUL\misoul-api\misoul-api\app\api.py:34]
+2025-03-24 01:48:02,118 INFO: MISOUL API starting up [in O:\MISOUL\misoul-api\misoul-api\app\api.py:34]
+2025-03-24 01:48:10,885 ERROR: Traceback (most recent call last):
+  File "O:\MISOUL\misoul-api\misoul-api\app\api.py", line 53, in get_misoul_instance
+    from langchain_community.vectorstores import Chroma
+ModuleNotFoundError: No module named 'langchain_community'
+ [in O:\MISOUL\misoul-api\misoul-api\app\api.py:88]
+2025-03-24 01:53:20,967 INFO: MISOUL API starting up [in O:\MISOUL\misoul-api\misoul-api\app\api.py:34]
+2025-03-24 01:53:25,050 INFO: MISOUL API starting up [in O:\MISOUL\misoul-api\misoul-api\app\api.py:34]
+2025-03-24 09:12:28,096 INFO: MISOUL API starting up [in O:\MISOUL\misoul-api\misoul-api\app\api.py:34]
+2025-03-24 09:12:28,207 ERROR: Traceback (most recent call last):
+  File "O:\MISOUL\misoul-api\misoul-api\app\api.py", line 45, in <module>
+    from app.qdrant_manager import QdrantManager
+ModuleNotFoundError: No module named 'app.qdrant_manager'
+ [in O:\MISOUL\misoul-api\misoul-api\app\api.py:76]
+2025-03-24 09:13:24,332 INFO: MISOUL API starting up [in O:\MISOUL\misoul-api\misoul-api\app\api.py:34]

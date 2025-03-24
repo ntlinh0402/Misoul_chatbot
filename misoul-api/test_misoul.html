@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MISOUL Chatbot Test</title>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        #chat-container {
+            border: 1px solid #ccc;
+            padding: 20px;
+            height: 400px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+        }
+        .message {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 10px;
+        }
+        .user {
+            background-color: #e6f7ff;
+            text-align: right;
+            margin-left: 20%;
+        }
+        .bot {
+            background-color: #f2f2f2;
+            text-align: left;
+            margin-right: 20%;
+        }
+        textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            resize: vertical;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        select {
+            padding: 10px;
+            margin-right: 10px;
+        }
+        .confirmation-buttons {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        .confirmation-buttons button {
+            flex: 1;
+            padding: 8px;
+        }
+        .confirmation-buttons button:first-child {
+            background-color: #4CAF50;
+        }
+        .confirmation-buttons button:last-child {
+            background-color: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <h1>MISOUL Chatbot Test</h1>
+    <div id="chat-container"></div>
+    <div>
+        <textarea id="message" rows="3" placeholder="Nhập tin nhắn..."></textarea>
+        <div style="display: flex; align-items: center;">
+            <label for="emotional-level">Mức độ cảm xúc:</label>
+            <select id="emotional-level">
+                <option value="1">1 - Bình thường/Ổn định</option>
+                <option value="2">2 - Căng thẳng nhẹ</option>
+                <option value="3">3 - Lo âu vừa phải</option>
+                <option value="4">4 - Lo âu/Trầm cảm nghiêm trọng</option>
+                <option value="5">5 - Khủng hoảng</option>
+            </select>
+            <button id="send">Gửi</button>
+        </div>
+    </div>
+    <div style="margin-top: 20px;">
+        <h3>Cài đặt kết nối</h3>
+        <div>
+            <label for="api-url">API URL:</label>
+            <input type="text" id="api-url" value="http://127.0.0.1:5000/api/chat" style="width: 300px; padding: 5px;">
+            <button id="test-connection">Kiểm tra kết nối</button>
+        </div>
+        <div id="connection-status" style="margin-top: 10px;"></div>
+    </div>
+
+    <script>
+        let API_URL = 'http://127.0.0.1:5000/api/chat';
+        const API_KEY = 'misoul_api_78a2d513b9f1e6c4';
+        const chatContainer = document.getElementById('chat-container');
+        const messageInput = document.getElementById('message');
+        const emotionalLevelSelect = document.getElementById('emotional-level');
+        const sendButton = document.getElementById('send');
+        const apiUrlInput = document.getElementById('api-url');
+        const testConnectionButton = document.getElementById('test-connection');
+        const connectionStatus = document.getElementById('connection-status');
+        let waitingForConfirmation = false;
+
+        sendButton.addEventListener('click', sendMessage);
+        testConnectionButton.addEventListener('click', testConnection);
+        apiUrlInput.addEventListener('change', () => {
+            API_URL = apiUrlInput.value;
+        });
+        
+        messageInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        async function testConnection() {
+            connectionStatus.textContent = 'Đang kiểm tra kết nối...';
+            connectionStatus.style.color = 'blue';
+            
+            try {
+                const healthUrl = API_URL.replace('/api/chat', '/api/health');
+                const response = await fetch(healthUrl);
+                const data = await response.json();
+                
+                connectionStatus.textContent = 'Kết nối thành công: ' + data.message;
+                connectionStatus.style.color = 'green';
+            } catch (error) {
+                connectionStatus.textContent = 'Lỗi kết nối: ' + error;
+                connectionStatus.style.color = 'red';
+            }
+        }
+
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message) return;
+
+            // Hiển thị tin nhắn của người dùng
+            addMessage(message, 'user');
+            messageInput.value = '';
+
+            // Thêm trạng thái "đang gõ"
+            const typingMessage = addMessage('MISOUL đang trả lời...', 'bot', 'typing-message');
+            
+            try {
+                const emotionalLevel = parseInt(emotionalLevelSelect.value);
+                
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        emotional_level: emotionalLevel,
+                        user_id: 'web_test_user'
+                    })
+                });
+
+                const data = await response.json();
+                console.log("Phản hồi API:", data);
+                
+                // Xóa trạng thái "đang gõ"
+                if (chatContainer.contains(typingMessage)) {
+                    chatContainer.removeChild(typingMessage);
+                }
+                
+                try {
+                    if (data.error) {
+                        addMessage(`Lỗi: ${data.error}`, 'bot');
+                    } else if (data.response) {
+                        // Xử lý phản hồi an toàn
+                        handleResponseSafely(data.response);
+                    } else {
+                        addMessage("Không nhận được phản hồi hợp lệ từ server", "bot");
+                    }
+                } catch (processingError) {
+                    console.error("Lỗi khi xử lý phản hồi:", processingError);
+                    addMessage(`Lỗi xử lý: ${processingError.message}`, 'bot');
+                }
+            } catch (error) {
+                // Xóa trạng thái "đang gõ"
+                if (chatContainer.contains(typingMessage)) {
+                    chatContainer.removeChild(typingMessage);
+                }
+                
+                console.error('Error:', error);
+                addMessage('Lỗi kết nối với MISOUL API! Chi tiết lỗi trong Console (F12)', 'bot');
+            }
+        }
+
+        function handleResponseSafely(response) {
+            console.log("Đang xử lý phản hồi:", response);
+            
+            try {
+                // Kiểm tra cấu trúc phản hồi
+                if (response && Array.isArray(response.messages)) {
+                    // Hiển thị từng tin nhắn riêng biệt
+                    console.log("Hiển thị danh sách tin nhắn:", response.messages);
+                    response.messages.forEach(message => {
+                        addMessage(message, 'bot');
+                    });
+                    
+                    // Kiểm tra nếu cần xác nhận
+                    if (response.waiting_confirmation) {
+                        waitingForConfirmation = true;
+                        displayConfirmationButtons();
+                    }
+                } else if (typeof response === 'string') {
+                    // Xử lý phản hồi dạng chuỗi (tương thích ngược)
+                    console.log("Hiển thị tin nhắn dạng chuỗi");
+                    addMessage(response, 'bot');
+                } else if (Array.isArray(response)) {
+                    // Trường hợp API trả về mảng tin nhắn trực tiếp
+                    console.log("Hiển thị mảng tin nhắn");
+                    response.forEach(message => {
+                        addMessage(message, 'bot');
+                    });
+                } else {
+                    // Hiển thị dù có cấu trúc không đúng
+                    console.warn("Cấu trúc phản hồi không đúng định dạng mong đợi:", response);
+                    const responseText = typeof response === 'object' ? JSON.stringify(response) : String(response);
+                    addMessage(responseText, 'bot');
+                }
+            } catch (error) {
+                console.error("Lỗi khi xử lý phản hồi:", error);
+                addMessage("Lỗi khi hiển thị tin nhắn. Vui lòng thử lại.", "bot");
+            }
+        }
+
+        function displayConfirmationButtons() {
+            const buttonsContainer = document.createElement('div');
+            buttonsContainer.className = 'confirmation-buttons';
+            
+            const acceptButton = document.createElement('button');
+            acceptButton.textContent = 'Có, tôi muốn';
+            acceptButton.onclick = () => {
+                waitingForConfirmation = false;
+                chatContainer.removeChild(buttonsContainer);
+                sendConfirmationResponse('Có, tôi muốn');
+            };
+            
+            const declineButton = document.createElement('button');
+            declineButton.textContent = 'Không, cảm ơn';
+            declineButton.onclick = () => {
+                waitingForConfirmation = false;
+                chatContainer.removeChild(buttonsContainer);
+                sendConfirmationResponse('Không, cảm ơn');
+            };
+            
+            buttonsContainer.appendChild(acceptButton);
+            buttonsContainer.appendChild(declineButton);
+            
+            chatContainer.appendChild(buttonsContainer);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function sendConfirmationResponse(response) {
+            // Hiển thị phản hồi xác nhận của người dùng
+            addMessage(response, 'user');
+            
+            // Thêm trạng thái "đang gõ"
+            const typingMessage = addMessage('MISOUL đang trả lời...', 'bot', 'typing-message');
+            
+            // Gửi tin nhắn xác nhận đến server
+            fetch(API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${API_KEY}`
+                },
+                body: JSON.stringify({
+                    message: response,
+                    emotional_level: parseInt(emotionalLevelSelect.value),
+                    user_id: 'web_test_user'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log("Phản hồi xác nhận:", data);
+                
+                // Xóa trạng thái "đang gõ"
+                if (chatContainer.contains(typingMessage)) {
+                    chatContainer.removeChild(typingMessage);
+                }
+                
+                if (data.error) {
+                    addMessage(`Lỗi: ${data.error}`, 'bot');
+                } else if (data.response) {
+                    handleResponseSafely(data.response);
+                }
+            })
+            .catch(error => {
+                // Xóa trạng thái "đang gõ"
+                if (chatContainer.contains(typingMessage)) {
+                    chatContainer.removeChild(typingMessage);
+                }
+                
+                console.error('Error:', error);
+                addMessage('Lỗi kết nối với MISOUL API!', 'bot');
+            });
+        }
+
+        function addMessage(text, type, id = null) {
+            try {
+                console.log(`Thêm tin nhắn: Loại=${type}, ID=${id}, Nội dung=${text?.substring(0, 30)}...`);
+                
+                const messageElement = document.createElement('div');
+                messageElement.className = `message ${type}`;
+                if (id) messageElement.id = id;
+                
+                // Đảm bảo text không phải là null hoặc undefined
+                const safeText = text || "Không có nội dung";
+                messageElement.textContent = safeText;
+                
+                chatContainer.appendChild(messageElement);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+                return messageElement;
+            } catch (error) {
+                console.error("Lỗi khi thêm tin nhắn:", error);
+                return null;
+            }
+        }
+
+        // Thêm tin nhắn chào mừng
+        addMessage('Chào mừng đến với MISOUL Chatbot! Hãy gửi tin nhắn để bắt đầu trò chuyện.', 'bot');
+    </script>
+</body>
+</html>
