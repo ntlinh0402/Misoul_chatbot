@@ -36,43 +36,47 @@ app.logger.info('MISOUL API starting up')
 # Cấu hình API key cho Gemini
 os.environ["GOOGLE_API_KEY"] = Config.GOOGLE_API_KEY
 
-# Biến global để lưu trữ instance chatbot
+# Biến global để lưu trữ instance chatbot và kiểm soát xử lý PDF
 misoul_chatbot = None
+PDF_PROCESSED = False
 
 def get_misoul_instance():
     """
     Khởi tạo một instance MISOUL Chatbot (nếu chưa có) và trả về nó
     """
-    global misoul_chatbot
+    global misoul_chatbot, PDF_PROCESSED
     
     if misoul_chatbot is None:
         try:
             app.logger.info("Khởi tạo MISOUL Chatbot...")
             
-            # Khởi tạo QdrantManager
-            from app.qdrant_manager import QdrantManager
-            
-            # Tạo instance
-            vectordb = QdrantManager()
-            
-            # Kiểm tra xem collection có dữ liệu không
-            test_docs = vectordb.similarity_search("test", k=1)
-            if not test_docs:
-                # Thử import từ embedding model
-                embedding_model_path = os.path.join(Config.VECTOR_DB_PATH, "embedding_model.pkl")
-                if os.path.exists(embedding_model_path):
-                    count = vectordb.import_from_embedding_model(embedding_model_path)
-                    app.logger.info(f"Đã import {count} tài liệu từ embedding model")
-                else:
-                    app.logger.warning(f"Không tìm thấy embedding model tại {embedding_model_path}")
-            else:
-                app.logger.info("Qdrant đã có dữ liệu sẵn sàng sử dụng")
+            # Thay thế QdrantManager bằng FAISS
+            from app.pdf_processor_langchain import PDFProcessor
+            PDF_PROCESSED = PDFProcessor.check_processing_status()
 
-            app.logger.info(f"Đã khởi tạo QdrantManager")
+            # Tải vector store
+            vector_db = PDFProcessor.load_vector_store()
+            
+            if vector_db is None and not PDF_PROCESSED:
+                app.logger.warning("Không tìm thấy vector database. Kiểm tra thư mục vectorstore/db_faiss")
+                app.logger.info("Tạo vector database từ file PDF có sẵn...")
+                processor = PDFProcessor()
+                success = processor.process_all_pdfs()
+                PDF_PROCESSED = True  # Đánh dấu đã xử lý, ngay cả khi thất bại
+                
+                if success:
+                    vector_db = PDFProcessor.load_vector_store()
+                else:
+                    app.logger.error("Không thể xử lý PDF và tạo vector database")
+                    # Trả về None nếu không thể khởi tạo vector database
+                    return None
+            #elif vector_db is None:
+             #   app.logger.warning("Không tìm thấy vector database và đã thử xử lý PDF trước đó")
+                # Tiếp tục mà không cần vector database
             
             # Khởi tạo các thành phần
             llm_manager = GeminiManager(model_name=Config.MODEL_NAME)
-            rag_manager = RAGManager(vector_db=vectordb)
+            rag_manager = RAGManager(vector_db=vector_db)
             prompt_manager = PromptManager()
             
             # Khởi tạo chatbot
@@ -91,8 +95,12 @@ def verify_api_key():
     """
     Kiểm tra API key trong header request
     """
-    if request.endpoint == 'health_check':
-        return  # Không yêu cầu API key cho health check
+    if request.endpoint == 'health_check' or request.endpoint == 'list_routes':
+        return  # Không yêu cầu API key cho health check và list routes
+    
+    # Xử lý OPTIONS request cho CORS
+    if request.method == 'OPTIONS':
+        return
     
     # Lấy API key từ header
     auth_header = request.headers.get('Authorization')
@@ -106,7 +114,7 @@ def verify_api_key():
         if token != Config.MISOUL_API_KEY:
             return jsonify({"error": "API key không hợp lệ"}), 401
 
-# Hàm mới: Xử lý phản hồi của chatbot
+# Hàm xử lý phản hồi của chatbot
 def process_chatbot_response(response, user_id):
     """
     Xử lý phản hồi từ chatbot và định dạng đúng cho API
@@ -139,11 +147,14 @@ def process_chatbot_response(response, user_id):
     }
 
 # Route để kiểm tra API đang hoạt động
-@app.route('/api/health', methods=['GET'])
+@app.route('/api/health', methods=['GET', 'OPTIONS'])
 def health_check():
     """
     Kiểm tra trạng thái hoạt động của API
     """
+    if request.method == 'OPTIONS':
+        return '', 200
+        
     return jsonify({
         "status": "healthy",
         "message": "MISOUL API đang hoạt động bình thường",
@@ -151,17 +162,24 @@ def health_check():
     })
 
 # Route chính để trò chuyện với MISOUL
-@app.route('/api/chat', methods=['POST'])
+@app.route('/api/chat', methods=['POST', 'OPTIONS'])
 def chat():
     """
     Endpoint chính để tương tác với MISOUL Chatbot
     """
+    # Xử lý request OPTIONS cho CORS
+    if request.method == 'OPTIONS':
+        return '', 200
+    
     # Kiểm tra API key
     auth_result = verify_api_key()
     if auth_result:
         return auth_result
     
     try:
+        # Ghi nhận thời gian bắt đầu
+        start_time = time.time()
+        
         # Lấy dữ liệu từ request
         data = request.json
         
@@ -188,9 +206,54 @@ def chat():
         # Lấy instance MISOUL
         misoul = get_misoul_instance()
         
+        # Kiểm tra nếu misoul là None
+        if misoul is None:
+            return jsonify({"error": "Không thể khởi tạo MISOUL Chatbot"}), 500
+        
+        # Kiểm tra thời gian xử lý
+        if time.time() - start_time > 10:  # 10 giây timeout cho khởi tạo
+            return jsonify({"error": "Thời gian khởi tạo MISOUL quá lâu"}), 504
+        
         # Xử lý tin nhắn với MISOUL
-        start_time = time.time()
-        response = misoul.process_message(message, emotional_level, biometric_data, user_id)
+        try:
+            with_timeout = True  # Đặt timeout cho xử lý tin nhắn
+            timeout_seconds = 30  # 30 giây timeout
+            
+            if with_timeout:
+                import threading
+                import queue
+                
+                result_queue = queue.Queue()
+                
+                def process_with_queue():
+                    try:
+                        result = misoul.process_message(message, emotional_level, biometric_data, user_id)
+                        result_queue.put(("success", result))
+                    except Exception as e:
+                        result_queue.put(("error", str(e)))
+                
+                # Tạo và bắt đầu thread
+                thread = threading.Thread(target=process_with_queue)
+                thread.daemon = True
+                thread.start()
+                
+                # Chờ kết quả với timeout
+                try:
+                    status, response = result_queue.get(timeout=timeout_seconds)
+                    
+                    if status == "error":
+                        raise Exception(response)
+                    
+                except queue.Empty:
+                    return jsonify({"error": f"Xử lý tin nhắn quá thời gian ({timeout_seconds}s)"}), 504
+            else:
+                # Xử lý thông thường không có timeout
+                response = misoul.process_message(message, emotional_level, biometric_data, user_id)
+            
+        except Exception as e:
+            app.logger.error(f"Lỗi khi xử lý tin nhắn: {str(e)}")
+            return jsonify({"error": f"Lỗi khi xử lý tin nhắn: {str(e)}"}), 500
+        
         processing_time = time.time() - start_time
         
         # Xử lý và định dạng phản hồi
@@ -215,11 +278,15 @@ def chat():
         return jsonify({"error": error_message}), 500
 
 # Route để xóa lịch sử trò chuyện
-@app.route('/api/clear_history', methods=['POST'])
+@app.route('/api/clear_history', methods=['POST', 'OPTIONS'])
 def clear_history():
     """
     Xóa lịch sử trò chuyện của một người dùng
     """
+    # Xử lý request OPTIONS cho CORS
+    if request.method == 'OPTIONS':
+        return '', 200
+        
     # Kiểm tra API key
     auth_result = verify_api_key()
     if auth_result:
@@ -248,11 +315,15 @@ def clear_history():
         return jsonify({"error": error_message}), 500
 
 # Route để lưu lịch sử trò chuyện
-@app.route('/api/save_history', methods=['POST'])
+@app.route('/api/save_history', methods=['POST', 'OPTIONS'])
 def save_history():
     """
     Lưu lịch sử trò chuyện của một người dùng vào file
     """
+    # Xử lý request OPTIONS cho CORS
+    if request.method == 'OPTIONS':
+        return '', 200
+        
     # Kiểm tra API key
     auth_result = verify_api_key()
     if auth_result:
@@ -277,7 +348,6 @@ def save_history():
         misoul = get_misoul_instance()
         
         # Lưu lịch sử trò chuyện
-        
         success = misoul.save_conversation_history(filepath, user_id)
         
         if success:
@@ -299,4 +369,20 @@ def save_history():
         app.logger.error(traceback.format_exc())
         return jsonify({"error": error_message}), 500
 
-# Endpoint test đơn giản
+# Route để liệt kê tất cả các routes
+@app.route('/api/routes', methods=['GET', 'OPTIONS'])
+def list_routes():
+    """
+    Liệt kê tất cả các routes trong ứng dụng
+    """
+    if request.method == 'OPTIONS':
+        return '', 200
+        
+    routes = []
+    for rule in app.url_map.iter_rules():
+        routes.append({
+            "endpoint": rule.endpoint,
+            "methods": list(rule.methods),
+            "rule": str(rule)
+        })
+    return jsonify(routes)

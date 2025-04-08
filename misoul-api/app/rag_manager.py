@@ -1,4 +1,6 @@
 # app/rag_manager.py
+from app.pdf_processor_langchain import PDFProcessor
+
 class RAGManager:
     """
     Quản lý tìm kiếm và truy xuất thông tin từ Vector Database.
@@ -7,68 +9,67 @@ class RAGManager:
     kết hợp với phân tích cảm xúc để cung cấp thông tin chính xác và phù hợp.
     """
     
-    def __init__(self, vector_db):
+    def __init__(self, vector_db=None):
         """
         Khởi tạo RAGManager với vector database
         
         Args:
-            vector_db: Vector database (Chroma)
+            vector_db: Vector database (FAISS hoặc None)
         """
-        self.vector_db = vector_db
+        # Nếu không cung cấp vector_db, tải từ đĩa
+        self.vector_db = vector_db or PDFProcessor.load_vector_store()
         print("✅ Đã khởi tạo RAG Manager thành công!")
         
     def retrieve_documents(self, query, emotional_level=1, top_k=3):
-        """
-        Truy xuất tài liệu liên quan dựa trên nội dung và trạng thái cảm xúc
+
+        if self.vector_db is None:
+            print("⚠️ Vector database không có sẵn, trả về danh sách tài liệu trống")
+            return []
         
-        Args:
-            query: Câu hỏi của người dùng
-            emotional_level: Mức độ cảm xúc (1-5)
-            top_k: Số lượng tài liệu tối đa trả về
-            
-        Returns:
-            List[Document]: Danh sách tài liệu liên quan
-        """
-        # Tìm kiếm từ khóa liên quan đến các danh mục
-        category_keywords = {
-            'anxiety': ['lo âu', 'căng thẳng', 'lo lắng', 'sợ hãi', 'panic', 'hồi hộp', 'khó thở', 'hồi hộp'],
-            'depression': ['buồn', 'trầm cảm', 'tuyệt vọng', 'mệt mỏi', 'chán nản', 'cô đơn', 'không vui', 'không muốn'],
-            'cbt_techniques': ['suy nghĩ', 'nhận thức', 'hành vi', 'kỹ thuật', 'cbt', 'liệu pháp', 'thay đổi'],
-            'mindfulness': ['chánh niệm', 'thiền', 'thư giãn', 'hít thở', 'tập trung', 'ý thức', 'bình tĩnh']
-        }
+    # Tiếp tục xử lý nếu có vector_db...
+
+        expanded_query = self._expand_query(query, emotional_level)
         
-        # Xác định danh mục tiềm năng từ truy vấn
-        query_lower = query.lower()
-        potential_categories = []
-        
-        for category, keywords in category_keywords.items():
-            if any(keyword in query_lower for keyword in keywords):
-                potential_categories.append(category)
-        
-        # Nếu không tìm thấy danh mục từ từ khóa, sử dụng mức độ cảm xúc để gợi ý
-        if not potential_categories:
-            if emotional_level >= 4:
-                potential_categories = ['depression', 'anxiety']
-            elif emotional_level == 3:
-                potential_categories = ['anxiety', 'cbt_techniques']
-            elif emotional_level == 2:
-                potential_categories = ['mindfulness', 'cbt_techniques']
-            else:
-                potential_categories = ['mindfulness', 'cbt_techniques']
-        
-        # Tìm kiếm với filter nếu có danh mục
+        # Tìm kiếm tài liệu tương tự
         try:
-            results = self.vector_db.similarity_search(query, k=top_k)
-            documents = results
-            
-            # Log kết quả tìm kiếm
-            print(f"🔍 Đã tìm thấy {len(documents)} tài liệu liên quan")
-            for i, doc in enumerate(documents):
-                category = doc.metadata.get('category', 'không rõ') if hasattr(doc, 'metadata') else 'không rõ'
-                print(f"  Tài liệu {i+1}: {category} - {doc.page_content[:50]}...")
-            
+            if self.vector_db:
+                documents = self.vector_db.similarity_search(expanded_query, k=top_k)
+                print(f"🔍 Đã tìm thấy {len(documents)} tài liệu liên quan")
+                for i, doc in enumerate(documents):
+                    category = doc.metadata.get('category', 'không rõ')
+                    print(f"  Tài liệu {i+1}: {category} - {doc.page_content[:50]}...")
+                return documents
+            else:
+                print("⚠️ Vector database chưa được khởi tạo")
+                return []
         except Exception as e:
             print(f"⚠️ Lỗi khi tìm kiếm tài liệu: {e}")
-            documents = []
+            return []
+    
+    def _expand_query(self, query, emotional_level):
+        """
+        Mở rộng truy vấn dựa trên mức độ cảm xúc
         
-        return documents
+        Args:
+            query: Truy vấn gốc
+            emotional_level: Mức độ cảm xúc (1-5)
+            
+        Returns:
+            str: Truy vấn đã mở rộng
+        """
+        # Các từ khóa liên quan đến mỗi mức độ cảm xúc
+        emotional_keywords = {
+            1: ["bình thường", "ổn định", "tích cực"],
+            2: ["lo lắng nhẹ", "căng thẳng nhẹ", "hơi buồn"],
+            3: ["lo âu", "căng thẳng", "buồn", "trầm"],
+            4: ["trầm cảm", "lo âu nặng", "căng thẳng cao", "sợ hãi"],
+            5: ["khủng hoảng", "tuyệt vọng", "cực kỳ lo âu", "cực kỳ trầm cảm"]
+        }
+        
+        # Lấy từ khóa phù hợp với mức độ cảm xúc
+        keywords = emotional_keywords.get(emotional_level, emotional_keywords[1])
+        
+        # Mở rộng truy vấn với các từ khóa
+        expanded_query = f"{query} {' '.join(keywords)}"
+        
+        return expanded_query

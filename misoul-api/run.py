@@ -1,7 +1,13 @@
+# run.py
 import os
-from app.api import app
-from config import Config  # Thêm dòng này để import Config
+from app.api import app  # Import từ thư mục app
+from config import Config
+import sys
+import io
 
+# Thêm vào đầu file run.py
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 if __name__ == '__main__':
     # Kiểm tra API key
     if not Config.GOOGLE_API_KEY:

@@ -4,21 +4,10 @@ import time
 import google.generativeai as genai
 
 class GeminiManager:
-    """
-    Quản lý kết nối và tương tác với Google Gemini API.
-    
-    Lớp này đóng gói logic gọi API, cấu hình mô hình và xử lý lỗi khi
-    tương tác với Google Gemini API.
-    """
+
     
     def __init__(self, model_name="models/gemini-1.5-flash"):
-        """
-        Khởi tạo GeminiManager với model được chỉ định
-        
-        Args:
-            model_name (str): Tên model Gemini (mặc định: gemini-1.5-flash - nhanh và hiệu quả)
-                Lựa chọn khác: models/gemini-1.5-pro (chất lượng cao hơn nhưng chậm hơn)
-        """
+
         self.model_name = model_name
         
         # Kiểm tra API key
@@ -45,18 +34,7 @@ class GeminiManager:
             raise ValueError(f"Không thể khởi tạo model {model_name}. Chi tiết lỗi: {str(e)}")
     
     def generate_response(self, prompt, temperature=None, max_tokens=None):
-        """
-        Tạo phản hồi từ Gemini API với các thông số tùy chỉnh
-        
-        Args:
-            prompt (str): Prompt đầy đủ để gửi tới API
-            temperature (float, optional): Độ sáng tạo, từ 0.0-1.0
-            max_tokens (int, optional): Số token tối đa trong phản hồi
-        
-        Returns:
-            str: Phản hồi từ Gemini API
-        """
-        # Cập nhật cấu hình nếu cần
+       
         generation_config = self.generation_config.copy()
         if temperature is not None:
             generation_config["temperature"] = temperature
@@ -70,7 +48,6 @@ class GeminiManager:
         # Ghi log cấu hình (cho debug)
         log_config = f"Temperature: {generation_config['temperature']}, Max tokens: {generation_config['max_output_tokens']}"
         
-        # Thêm hướng dẫn hệ thống vào prompt thay vì dùng system_instruction
         system_instruction = (
             "Bạn là MISOUL, một người bạn tâm giao với chuyên môn tâm lý sâu sắc, "
             "luôn trả lời bằng tiếng Việt và không lưu trữ dữ liệu người dùng.\n\n"
